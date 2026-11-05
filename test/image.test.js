@@ -27,6 +27,17 @@ test('rechaza contenido falso y libera el buffer original también al fallar', a
   assert.equal(file.buffer, undefined)
 })
 
+test('vehículo y placa conservan detalle sin EXIF dentro del mismo límite comprimido', async () => {
+  const input = await sharp({ create: { width: 2000, height: 1200, channels: 3, background: '#d8e7f1' } }).jpeg().withMetadata({ exif: { IFD0: { Artist: 'prueba' } } }).toBuffer()
+  for (const type of ['foto_vehiculo', 'foto_placa']) {
+    const file = { buffer: input }, result = await compress(file, type)
+    assert.equal(file.buffer, undefined); assert.equal(result.mime, 'image/webp')
+    assert.ok(result.ancho > 720 && result.ancho <= 1440); assert.ok(result.buffer.length <= 256 * 1024)
+    const metadata = await sharp(result.buffer).metadata()
+    assert.equal(metadata.exif, undefined); assert.equal(metadata.icc, undefined)
+  }
+})
+
 test('rechaza imágenes de más de 20 megapíxeles antes de generar la salida', async () => {
   const file = { buffer: await sharp({ create: { width: 5000, height: 5000, channels: 3, background: '#fff' } }).png().toBuffer() }
   await assert.rejects(compress(file, 'foto_documento'), error => error.status === 415)

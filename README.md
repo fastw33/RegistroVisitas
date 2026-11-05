@@ -200,6 +200,16 @@ Los datos principales tienen esquema, tipos, longitudes, referencias e índices.
 
 El documento de identidad se normaliza a mayúsculas y no admite espacios/puntos; se conserva como texto. La pareja tipo/número es única. El PATCH general no permite cambiar tipo, número, nombres ni apellidos. Solo administración puede usar `POST /api/visitantes/{id}/correcciones` con `anterior`, `correccion` (los cuatro campos de identidad completos), `motivo` y `requestKey` UUID v4. La operación verifica la ficha anterior, impide documentos duplicados y guarda antes/después, autor y fecha en la misma transacción que actualiza ficha, visitas abiertas y auditoría. Las visitas cerradas conservan su identidad original. Los pases existentes se revocan y deben generarse nuevamente. `GET /api/visitantes/{id}/correcciones` lista el historial para administración. Un reintento conserva cuerpo y clave; reutilizarla con otros datos devuelve 409. La emisión de pases se serializa con la corrección del visitante y devuelve `invitacion` con nombre actual, anfitrión y fechas para la tarjeta compartible del frontend.
 
+## Vehículo opcional por visita
+
+En el ingreso directo, con cita o de una solicitud autorizada se admite `vehiculo: { "placa": "ABC123", "descripcion": "Moto negra" }`. Placa y descripción son opcionales; enviar `{}` registra la presencia del vehículo sin exigirlos. Omitir el campo conserva el flujo sin vehículo. El servidor devuelve `presente: true` cuando lo registra. La placa se guarda como texto en mayúsculas, sin espacios ni guiones; admite entre 3 y 12 letras/números, sin asumir un único formato de placa. El vehículo pertenece al movimiento de visita y conserva las mismas horas de entrada y salida. Las visitas anteriores no se modifican.
+
+Las fotografías `foto_vehiculo` y `foto_placa` son independientes y opcionales. Requieren su autorización específica, `visita` y un vehículo registrado en esa misma visita y para el mismo visitante. Usan S3 privado, revocación y vencimiento como las demás fotos. Se comprimen secuencialmente a WebP con el perfil de documento (hasta 1440 px y 256 KB por defecto), sin EXIF ni almacenamiento local; se mantiene el límite global de una foto procesándose a la vez. `GET /api/archivos?visitante=...&visita=...` permite consultar solo los adjuntos de ese movimiento.
+
+El hash de idempotencia incluye el vehículo cuando se envía: cambiar placa o descripción conservando la misma clave se rechaza. Las peticiones antiguas sin vehículo conservan su hash. En una solicitud aún autorizada, `vehiculo: null` al confirmar la entrada retira un vehículo indicado previamente.
+
+`npm run test:vehiculos` verifica validadores, modelos, reintentos, S3 con adaptadores aislados y compresión real; no inicia MongoDB ni servidores ni sube fotos a un bucket real.
+
 ## Validación
 
 ```powershell

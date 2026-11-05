@@ -4,7 +4,7 @@ const schema = new Schema({
   visitante: { type: Schema.Types.ObjectId, ref: 'Visitante', required: true },
   visita: { type: Schema.Types.ObjectId, ref: 'Visita' },
   consentimiento: { type: Schema.Types.ObjectId, ref: 'Consentimiento', required: true },
-  tipo: { type: String, enum: ['foto_rostro', 'foto_documento'], required: true },
+  tipo: { type: String, enum: ['foto_rostro', 'foto_documento', 'foto_vehiculo', 'foto_placa'], required: true },
   storageKey: { type: String, required: true, select: false },
   storageBucket: { type: String, required: true, select: false },
   storageVersionId: { type: String, select: false },

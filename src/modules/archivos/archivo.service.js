@@ -33,7 +33,9 @@ async function upload(data, file, actor) {
   const staged = await transaction(async session => {
     await required(Visitante, data.visitante, session, { activo: true })
     const consent = await requireConsent(data.visitante, data.tipo, session)
-    if (data.visita) await required(Visita, data.visita, session, { visitante: data.visitante })
+    const visit = data.visita ? await required(Visita, data.visita, session, { visitante: data.visitante }) : null
+    if (['foto_vehiculo', 'foto_placa'].includes(data.tipo) && !visit?.vehiculo?.presente)
+      throw new ApiError(422, 'Registre el vehículo en esta visita antes de adjuntar sus fotos', 'VEHICLE_REQUIRED')
     const [row] = await Archivo.create([{
       ...data, consentimiento: consent._id, storageKey, storageBucket: env.s3.bucket,
       storageEstado: 'pendiente', bytes: buffer.length, ...image,
@@ -87,7 +89,7 @@ async function remove(id, actor) {
 
 async function getAll(query) {
   const validConsents = await Consentimiento.find({ visitante: query.visitante, revocadoEn: null }).distinct('_id')
-  return list(Archivo, { visitante: query.visitante, storageEstado: 'disponible', eliminadoEn: null, venceEn: { $gt: new Date() }, consentimiento: { $in: validConsents } }, query)
+  return list(Archivo, { visitante: query.visitante, ...(query.visita ? { visita: query.visita } : {}), storageEstado: 'disponible', eliminadoEn: null, venceEn: { $gt: new Date() }, consentimiento: { $in: validConsents } }, query)
 }
 
 async function purge() {

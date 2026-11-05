@@ -17,22 +17,27 @@ const schemas = {
   Sede: object({ codigo: str(), nombre: str(), direccion: str(), zonaHoraria: str('Zona IANA', { default: 'America/Bogota' }) }, ['codigo', 'nombre']),
   SedeUpdate: object({ nombre: str(), direccion: str(), zonaHoraria: str(), activa: { type: 'boolean' } }),
   Visitante: object({ tipoDocumento: str('', { enum: ['CC', 'CE', 'TI', 'PASAPORTE', 'PPT', 'OTRO'] }), numeroDocumento: str(), nombres: str(), apellidos: str(), empresa: str(), telefono: str(), email: str('', { format: 'email' }), wmsIdExterno: str(), atributos: { type: 'object', additionalProperties: { type: 'string', maxLength: 500 }, maxProperties: 30 } }, ['tipoDocumento', 'numeroDocumento', 'nombres', 'apellidos']),
-  Consentimiento: object({ visitante: oid, finalidad: str('', { enum: ['registro_visitas', 'foto_rostro', 'foto_documento', 'datos_documento'] }), version: str('', { example: '1.0' }), aceptado: { type: 'boolean', enum: [true] }, medio: str('', { enum: ['casilla', 'firma', 'verbal'] }), evidencia: str('Referencia o descripción comprobable de la manifestación del visitante') }, ['visitante', 'finalidad', 'version', 'aceptado', 'medio', 'evidencia']),
+  Consentimiento: object({ visitante: oid, finalidad: str('', { enum: ['registro_visitas', 'foto_rostro', 'foto_documento', 'datos_documento', 'foto_vehiculo', 'foto_placa'] }), version: str('', { example: '1.0' }), aceptado: { type: 'boolean', enum: [true] }, medio: str('', { enum: ['casilla', 'firma', 'verbal'] }), evidencia: str('Referencia o descripción comprobable de la manifestación del visitante') }, ['visitante', 'finalidad', 'version', 'aceptado', 'medio', 'evidencia']),
   Cita: object({ visitante: oid, sede: oid, anfitrion: oid, motivo: str(), area: str(), inicio: date, fin: date, repeticion: object({ cantidad: { type: 'integer', minimum: 2, maximum: 30 }, cadaSemanas: { type: 'integer', minimum: 1, maximum: 4 } }, ['cantidad', 'cadaSemanas']) }, ['visitante', 'sede', 'anfitrion', 'motivo', 'inicio', 'fin']),
   Reprogramar: object({ inicio: date, fin: date }, ['inicio', 'fin']),
   Motivo: object({ motivo: str() }),
   Revocacion: object({ motivo: str() }, ['motivo']),
   Pase: object({ token: str('Valor opaco de 64 caracteres hexadecimales', { pattern: '^[a-f0-9]{64}$' }) }, ['token']),
-  Identidad: object({ identidadVerificada: { type: 'boolean', enum: [true] } }, ['identidadVerificada']),
+  Vehiculo: object({ presente: { type: 'boolean', readOnly: true, description: 'El servidor lo asigna al registrar un vehículo, incluso sin placa ni descripción.' }, placa: str('Opcional; se normaliza a mayúsculas sin espacios ni guiones', { maxLength: 12, example: 'ABC123' }), descripcion: str('Opcional: tipo, marca o color del vehículo', { maxLength: 150 }) }),
+  Identidad: object({ vehiculo: { type: 'object', allOf: [ref('Vehiculo')], nullable: true, description: 'Opcional. null retira el vehículo de una solicitud antes de confirmar su entrada.' }, identidadVerificada: { type: 'boolean', enum: [true] } }, ['identidadVerificada']),
   Equipo: object({ descripcion: str(), serial: str() }, ['descripcion']),
-  Visita: object({ visitante: oid, sede: oid, anfitrion: oid, motivo: str(), area: str(), equipos: { type: 'array', maxItems: 20, items: ref('Equipo') }, observaciones: str() }, ['visitante', 'sede', 'anfitrion', 'motivo']),
-  EntradaCita: { ...object({ cita: oid, token: str(), identidadVerificada: { type: 'boolean', enum: [true] }, equipos: { type: 'array', maxItems: 20, items: ref('Equipo') }, observaciones: str() }, ['identidadVerificada']), oneOf: [{ required: ['cita'] }, { required: ['token'] }] },
-  EntradaDirecta: object({ visitante: oid, sede: oid, anfitrion: oid, motivo: str(), area: str(), identidadVerificada: { type: 'boolean', enum: [true] }, equipos: { type: 'array', maxItems: 20, items: ref('Equipo') }, observaciones: str() }, ['visitante', 'motivo', 'identidadVerificada']),
-  Archivo: object({ visitante: oid, visita: oid, tipo: str('', { enum: ['foto_rostro', 'foto_documento'] }), archivo: str('JPEG, PNG o WebP; máximo configurado por MAX_UPLOAD_MB', { format: 'binary' }) }, ['visitante', 'tipo', 'archivo']),
+  Visita: object({ visitante: oid, sede: oid, anfitrion: oid, motivo: str(), area: str(), equipos: { type: 'array', maxItems: 20, items: ref('Equipo') }, observaciones: str(), vehiculo: ref('Vehiculo') }, ['visitante', 'sede', 'anfitrion', 'motivo']),
+  EntradaCita: { ...object({ cita: oid, token: str(), identidadVerificada: { type: 'boolean', enum: [true] }, equipos: { type: 'array', maxItems: 20, items: ref('Equipo') }, observaciones: str(), vehiculo: ref('Vehiculo') }, ['identidadVerificada']), oneOf: [{ required: ['cita'] }, { required: ['token'] }] },
+  EntradaDirecta: object({ visitante: oid, sede: oid, anfitrion: oid, motivo: str(), area: str(), identidadVerificada: { type: 'boolean', enum: [true] }, equipos: { type: 'array', maxItems: 20, items: ref('Equipo') }, observaciones: str(), vehiculo: ref('Vehiculo') }, ['visitante', 'motivo', 'identidadVerificada']),
+  Archivo: object({ visitante: oid, visita: oid, tipo: str('', { enum: ['foto_rostro', 'foto_documento', 'foto_vehiculo', 'foto_placa'] }), archivo: str('JPEG, PNG o WebP; máximo configurado por MAX_UPLOAD_MB', { format: 'binary' }) }, ['visitante', 'tipo', 'archivo']),
   Error: { type: 'object', properties: { error: { type: 'object', properties: { code: str(), message: str(), details: { type: 'array', items: { type: 'object' } } } }, requestId: str() } },
   Pagina: { type: 'object', properties: { data: { type: 'array', items: { type: 'object' } }, pagination: { type: 'object', properties: { page: { type: 'integer' }, limit: { type: 'integer' }, total: { type: 'integer' }, pages: { type: 'integer' } } } } },
 }
 schemas.VisitanteUpdate = object({ ...schemas.Visitante.properties, activo: { type: 'boolean' } })
+schemas.Archivo.oneOf = [
+  { properties: { tipo: { enum: ['foto_rostro', 'foto_documento'] } } },
+  { properties: { tipo: { enum: ['foto_vehiculo', 'foto_placa'] } }, required: ['visita'] },
+]
 for (const name of ['Cita', 'Visita']) {
   schemas[name].required = schemas[name].required.filter(field => field !== 'sede')
   schemas[name].properties.sede = { ...oid, description: 'Opcional: la API asigna automáticamente la oficina actual.' }
@@ -104,7 +109,7 @@ route('get', '/api/visitas/{id}', 'Consultar visita')
 for (const action of ['autorizar', 'rechazar']) route('post', `/api/visitas/{id}/${action}`, `${action} solicitud sin cita`, { roles: 'admin, anfitrion', body: 'Motivo' })
 route('post', '/api/visitas/{id}/entrada', 'Confirmar identidad y entrada de visita autorizada', { roles: 'admin, recepcion', body: 'Identidad' })
 route('post', '/api/visitas/{id}/salida', 'Registrar salida; reintentar no duplica eventos', { roles: 'admin, recepcion' })
-route('get', '/api/archivos', 'Listar fotos vigentes autorizadas', { roles: 'admin, recepcion', paged: true, filters: [{ ...filter('visitante', oid), required: true }] })
+route('get', '/api/archivos', 'Listar fotos vigentes autorizadas', { roles: 'admin, recepcion', paged: true, filters: [{ ...filter('visitante', oid), required: true }, filter('visita', oid)] })
 route('post', '/api/archivos', 'Subir foto privada con autorización específica', { roles: 'admin, recepcion', body: 'Archivo', multipart: true, status: 201 })
 route('get', '/api/archivos/{id}/contenido', 'Consultar foto; registra auditoría', { roles: 'admin, recepcion', binary: true })
 route('delete', '/api/archivos/{id}', 'Eliminar foto privada', { roles: 'admin, recepcion' })

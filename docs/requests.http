@@ -121,7 +121,17 @@ Content-Type: application/json
 
 {"identidadVerificada":true}
 
-### Fotos: primero registrar consentimiento específico foto_rostro o foto_documento.
+### Ingreso directo con vehículo opcional (también se admite en /api/visitas/entrada)
+POST {{baseUrl}}/api/visitas/ingreso-directo
+Authorization: Bearer {{token}}
+Idempotency-Key: 71083f93-f6a7-46e4-82eb-c9fd9dcd85ab
+Content-Type: application/json
+
+{"visitante":"{{visitanteId}}","motivo":"Visita sin cita","identidadVerificada":true,"vehiculo":{"placa":"ABC123","descripcion":"Moto negra"}}
+
+### Fotos: primero registrar consentimiento específico foto_rostro, foto_documento, foto_vehiculo o foto_placa.
 # POST /api/archivos con multipart/form-data:
 # visitante={{visitanteId}}, tipo=foto_rostro, visita={{visitaId}} (opcional), archivo=<imagen>
+# Para foto_vehiculo y foto_placa, visita es obligatoria y debe tener un vehículo registrado.
+# GET /api/archivos?visitante={{visitanteId}}&visita={{visitaId}} lista solo sus fotos.
 # GET /api/archivos/:id/contenido requiere Authorization: Bearer {{token}}.

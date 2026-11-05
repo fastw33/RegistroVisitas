@@ -10,7 +10,7 @@ sharp.concurrency(1)
 async function compress(file, tipo) {
   if (!file?.buffer) throw new ApiError(400, 'Adjunte una imagen en el campo archivo')
   const bytesOriginales = file.buffer.length
-  const document = tipo === 'foto_documento'
+  const document = ['foto_documento', 'foto_vehiculo', 'foto_placa'].includes(tipo)
   let quality = document ? env.photo.documentQuality : env.photo.faceQuality
   let buffer, info
   try {
@@ -33,7 +33,7 @@ async function compress(file, tipo) {
   } catch {
     throw new ApiError(415, 'Imagen inválida. Use JPEG, PNG o WebP, sin animación y hasta 20 megapíxeles')
   } finally { file.buffer = undefined }
-  if (buffer.length > env.photo.maxBytes) throw new ApiError(422, 'La foto sigue siendo demasiado grande; recorte el documento o acérquese al rostro', 'PHOTO_OUTPUT_TOO_LARGE')
+  if (buffer.length > env.photo.maxBytes) throw new ApiError(422, 'La foto sigue siendo demasiado grande; recorte la imagen o acérquese al objeto', 'PHOTO_OUTPUT_TOO_LARGE')
   return { buffer, mime: 'image/webp', bytesOriginales, ancho: info.width, alto: info.height, calidad: quality }
 }
 module.exports = { compress }

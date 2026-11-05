@@ -11,6 +11,7 @@ const schema = new Schema({
   identidadVerificada: { type: Boolean, default: false },
   consentimientoRegistro: { type: Schema.Types.ObjectId, ref: 'Consentimiento' },
   identidad: { tipoDocumento: String, numeroDocumento: String, nombres: String, apellidos: String, empresa: String },
+  vehiculo: { type: require('./visita.vehiculo').schema, default: undefined },
   equipos: [{ _id: false, descripcion: { type: String, required: true, maxlength: 200 }, serial: { type: String, maxlength: 100 } }],
   observaciones: { type: String, maxlength: 1000 },
   eventos: [eventSchema],

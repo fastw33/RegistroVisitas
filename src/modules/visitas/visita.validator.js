@@ -1,9 +1,11 @@
 const { header } = require('express-validator')
 const { body, query, id, ref, text, page, finish } = require('../../utils/validators')
+const vehiculo = require('./visita.vehiculo').validators
 const equipos = [
   body('equipos').optional().isArray({ max: 20 }),
   text('equipos.*.descripcion', 200), text('equipos.*.serial', 100, true),
   text('observaciones', 1000, true),
+  ...vehiculo(),
 ]
 const verified = body('identidadVerificada').custom(v => v === true).withMessage('Recepción debe verificar la identidad antes del ingreso')
 exports.create = finish([ref('visitante'), ref('sede', true), ref('anfitrion'), text('motivo', 500), text('area', 150, true), ...equipos])
@@ -18,7 +20,7 @@ exports.fromAppointment = finish([
     .custom((value, { req }) => Boolean(req.body.cita) !== Boolean(req.body.token)).withMessage('Envíe cita o token, exactamente uno'),
   ...equipos,
 ])
-exports.entry = finish([id(), verified])
+exports.entry = finish([id(), verified, ...vehiculo(true)])
 exports.action = finish([id(), text('motivo', 500, true)])
 exports.get = finish([id()])
 exports.list = finish([

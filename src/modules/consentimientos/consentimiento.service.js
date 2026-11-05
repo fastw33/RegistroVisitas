@@ -6,6 +6,8 @@ const { list, required } = require('../../utils/query')
 const ApiError = require('../../utils/ApiError')
 const defaults = require('../../config/privacy')
 const texts = Object.freeze({
+  foto_vehiculo: 'Autorizo de manera voluntaria conservar temporalmente una foto del vehículo vinculada a esta visita para controlar su entrada y salida. Puedo registrar el ingreso sin adjuntar esta fotografía.',
+  foto_placa: 'Autorizo de manera voluntaria conservar temporalmente una foto de la placa del vehículo vinculada a esta visita para controlar su entrada y salida. Puedo registrar el ingreso sin adjuntar esta fotografía.',
   datos_documento: 'El visitante autoriza guardar los datos opcionales de esta sección para complementar su ficha de visitas, incluido el RH como dato sensible de salud. Puede ingresar sin autorizarlos y solicitar su eliminación.',
   registro_visitas: 'Autorizo el tratamiento de mis datos de identificación y de mis visitas para gestionar la agenda, verificar el acceso y registrar entradas y salidas de las oficinas. Puedo consultar, actualizar y solicitar la supresión de mis datos conforme a la política de tratamiento y a las obligaciones legales aplicables.',
   foto_rostro: 'Autorizo de manera expresa y voluntaria la captura y conservación temporal de una fotografía de mi rostro para verificación visual por recepción. No incluye reconocimiento facial automático. Entiendo que es un dato sensible y que puedo ingresar mediante verificación documental sin autorizar esta fotografía.',

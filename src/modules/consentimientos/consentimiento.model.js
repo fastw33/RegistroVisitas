@@ -2,7 +2,7 @@ const { Schema, model } = require('mongoose')
 const { options, actor } = require('../../utils/model')
 const schema = new Schema({
   visitante: { type: Schema.Types.ObjectId, ref: 'Visitante', required: true },
-  finalidad: { type: String, enum: ['registro_visitas', 'foto_rostro', 'foto_documento', 'datos_documento'], required: true },
+  finalidad: { type: String, enum: ['registro_visitas', 'foto_rostro', 'foto_documento', 'datos_documento', 'foto_vehiculo', 'foto_placa'], required: true },
   version: { type: String, required: true }, texto: { type: String, required: true },
   responsable: { type: String, required: true }, contacto: { type: String, required: true },
   medio: { type: String, enum: ['casilla', 'firma', 'verbal'], required: true },

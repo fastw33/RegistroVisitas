@@ -8,6 +8,7 @@ const { required, list, ownScope } = require('../../utils/query')
 const { event } = require('../../utils/model')
 const { record } = require('../auditoria/auditoria.service')
 const ApiError = require('../../utils/ApiError')
+const vehicleFingerprint = require('./visita.vehiculo').fingerprint
 
 function identity(v) { return { tipoDocumento: v.tipoDocumento, numeroDocumento: v.numeroDocumento, nombres: v.nombres, apellidos: v.apellidos, empresa: v.empresa } }
 function publicVisit(row) { const value = row.toObject ? row.toObject() : { ...row }; delete value.idempotencyKey; delete value.requestHash; return value }
@@ -24,7 +25,7 @@ const authorize = (id, aprobar, motivo, actor) => transaction(async session => {
   row.eventos.push(event(actor, aprobar ? 'autorizar' : 'rechazar', motivo)); await row.save({ session })
   await record(actor, aprobar ? 'autorizar' : 'rechazar', 'visitas', id, session); return row
 })
-const enter = (id, actor) => transaction(async session => {
+const enter = (id, actor, data = {}) => transaction(async session => {
   const row = await required(Visita, id, session)
   if (row.estado === 'dentro') return row // Reintentar el mismo ingreso no duplica eventos.
   if (row.estado !== 'autorizada') throw new ApiError(409, 'La visita debe estar autorizada', 'INVALID_STATE')
@@ -32,13 +33,15 @@ const enter = (id, actor) => transaction(async session => {
   const consent = await requireConsent(row.visitante, 'registro_visitas', session)
   row.estado = 'dentro'; row.entradaEn = new Date(); row.entradaPor = actor._id
   row.identidadVerificada = true; row.consentimientoRegistro = consent._id; row.identidad = identity(visitante)
+  if (Object.prototype.hasOwnProperty.call(data, 'vehiculo')) row.vehiculo = data.vehiculo || undefined
   row.eventos.push(event(actor, 'entrada')); await row.save({ session })
   await record(actor, 'entrada', 'visitas', id, session); return row
 })
 function fingerprint(data, actor) {
   // req.datos ya está validado y el orden lo determina el servidor.
   const ordered = { actor: String(actor._id), cita: data.cita || null, token: data.token || null, identidadVerificada: true,
-    equipos: (data.equipos || []).map(e => ({ descripcion: e.descripcion, serial: e.serial || null })), observaciones: data.observaciones || null }
+    equipos: (data.equipos || []).map(e => ({ descripcion: e.descripcion, serial: e.serial || null })), observaciones: data.observaciones || null,
+    ...vehicleFingerprint(data) }
   return createHash('sha256').update(JSON.stringify(ordered)).digest('hex')
 }
 async function previous(key, digest, session) {
@@ -53,6 +56,7 @@ async function enterDirect(data, key, actor) {
     sede: data.sede || null, anfitrion: data.anfitrion || null, motivo: data.motivo, area: data.area || null,
     identidadVerificada: true, equipos: (data.equipos || []).map(e => ({ descripcion: e.descripcion, serial: e.serial || null })),
     observaciones: data.observaciones || null,
+    ...vehicleFingerprint(data),
   }
   const digest = createHash('sha256').update(JSON.stringify(ordered)).digest('hex')
   try {
@@ -94,7 +98,7 @@ async function enterAppointment(data, key, actor) {
         motivo: cita.motivo, area: cita.area, estado: 'dentro', entradaEn: new Date(), entradaPor: actor._id,
         autorizadoPor: cita.eventos.findLast(e => e.accion === 'aprobar')?.actor,
         identidadVerificada: true, identidad: identity(visitante), consentimientoRegistro: consent._id,
-        equipos: data.equipos, observaciones: data.observaciones, idempotencyKey: key, requestHash: digest,
+        equipos: data.equipos, observaciones: data.observaciones, vehiculo: data.vehiculo, idempotencyKey: key, requestHash: digest,
         eventos: [event(actor, 'entrada_con_cita', status.avisoHorario?.mensaje)],
       }], { session })
       cita.estado = 'ingresada'; cita.paseHash = undefined; cita.eventos.push(event(actor, 'ingreso', status.avisoHorario?.mensaje))

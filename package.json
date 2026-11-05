@@ -13,6 +13,7 @@
     "dev": "nodemon src/server.js",
     "db:dev": "node scripts/mongo-dev.js",
     "db:stop": "node scripts/mongo-dev.js --stop",
+    "db:recover": "node scripts/recover-standalone.js",
     "storage:check": "node scripts/storage-check.js",
     "storage:prepare": "node scripts/prepare-bucket.js",
     "storage:smoke": "node scripts/storage-smoke.js",
@@ -26,6 +27,7 @@
     "test:horario": "node --test test/horario.unit.test.js",
     "test:agenda-pase": "node --test test/agenda-pase.unit.test.js",
     "test:vehiculos": "node --test test/vehiculos.unit.test.js test/vehiculo-fotos.unit.test.js test/image.test.js",
+    "test:standalone": "node --test test/standalone.integration.test.js",
     "check": "node scripts/check.js"
   },
   "dependencies": {

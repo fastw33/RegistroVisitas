@@ -77,7 +77,7 @@ async function enterDirect(data, key, actor) {
     })
   } catch (error) {
     if (error.code === 11000 || error.hasErrorLabel?.('TransientTransactionError')) {
-      const old = await previous(key, digest); if (old) return old
+      const old = await transaction.read(() => previous(key, digest)); if (old) return old
     }
     throw error
   }
@@ -107,7 +107,7 @@ async function enterAppointment(data, key, actor) {
     })
   } catch (error) {
     if (error.code === 11000 || error.hasErrorLabel?.('TransientTransactionError')) {
-      const old = await previous(key, digest); if (old) return old
+      const old = await transaction.read(() => previous(key, digest)); if (old) return old
     }
     throw error
   }

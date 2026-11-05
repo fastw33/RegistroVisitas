@@ -1,7 +1,8 @@
+const read = require('../../utils/transaction').read
 const service = require('./visita.service')
-exports.getAll = async (req, res) => res.json(await service.getAll(req.query, req.usuario))
-exports.getById = async (req, res) => res.json(await service.getById(req.params.id, req.usuario))
-exports.summary = async (req, res) => res.json(await service.summary(req.usuario))
+exports.getAll = async (req, res) => res.json(await read(() => service.getAll(req.query, req.usuario)))
+exports.getById = async (req, res) => res.json(await read(() => service.getById(req.params.id, req.usuario)))
+exports.summary = async (req, res) => res.json(await read(() => service.summary(req.usuario)))
 exports.create = async (req, res) => res.status(201).json(await service.create(req.datos, req.usuario))
 exports.authorize = aprobar => async (req, res) => res.json(await service.authorize(req.params.id, aprobar, req.datos.motivo, req.usuario))
 exports.enter = async (req, res) => res.json(await service.enter(req.params.id, req.usuario, req.datos))

@@ -1,31 +1,13 @@
 services:
-  mongo:
-    image: mongo:8.2
-    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
-    ports:
-      - "127.0.0.1:27019:27017"
-    volumes:
-      - mongo_data:/data/db
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - >-
-          mongosh --quiet --eval 'try { if (!rs.status().ok) quit(1); } catch (e) { rs.initiate({_id:"rs0",members:[{_id:0,host:"mongo:27017"}]}); quit(1); } if (!db.hello().isWritablePrimary) quit(1);'
-      interval: 5s
-      timeout: 5s
-      retries: 30
   api:
-    profiles: ["api"]
     build: .
     env_file: .env
     environment:
-      MONGODB_URI: mongodb://mongo:27017/registro_visitas?replicaSet=rs0
+      # Docker Desktop: el host es el MongoDB existente, no un servicio nuevo.
+      # En Linux configure DOCKER_MONGODB_URI con un destino privado accesible.
+      MONGODB_URI: ${DOCKER_MONGODB_URI:-mongodb://host.docker.internal:27017/registro_visitas?directConnection=true}
       NODE_ENV: production
+      HOST: 0.0.0.0
       PORT: 3015
     ports:
-      - "3015:3015"
-    depends_on:
-      mongo:
-        condition: service_healthy
-volumes:
-  mongo_data:
+      - "127.0.0.1:3015:3015"

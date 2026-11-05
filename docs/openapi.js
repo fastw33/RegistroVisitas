@@ -85,7 +85,7 @@ route('get', '/api/visitantes/{id}', 'Consultar ficha', { roles: 'admin, recepci
 route('patch', '/api/visitantes/{id}', 'Actualizar ficha', { roles: 'admin, recepcion', body: 'VisitanteUpdate' })
 route('post', '/api/visitantes/{id}/correcciones', 'Corregir identidad con motivo e historial, control de concurrencia y reintentos idempotentes. Actualiza visitas abiertas, conserva las cerradas y revoca pases QR.', { roles: 'admin', body: 'CorreccionVisitante' })
 route('get', '/api/visitantes/{id}/correcciones', 'Historial de correcciones de identidad, valores anteriores y nuevos, motivo y autor', { roles: 'admin', paged: true })
-route('patch', '/api/visitantes/{id}/datos-documento', 'Guardar datos opcionales y autorización expresa en una transacción; no altera identidad. Reemplaza el conjunto de datos opcionales.', { roles: 'admin, recepcion', body: 'DatosDocumento' })
+route('patch', '/api/visitantes/{id}/datos-documento', 'Guardar datos opcionales y autorización expresa en una operación protegida; no altera identidad. Reemplaza el conjunto de datos opcionales.', { roles: 'admin, recepcion', body: 'DatosDocumento' })
 route('get', '/api/visitantes/{id}/historial', 'Historial de visitas de una persona', { roles: 'admin, recepcion', paged: true })
 route('get', '/api/consentimientos/politica', 'Texto vigente de autorizaciones y responsable')
 route('get', '/api/consentimientos', 'Consultar autorizaciones', { roles: 'admin, recepcion', paged: true, filters: [{ ...filter('visitante', oid), required: true }] })
@@ -116,6 +116,6 @@ route('delete', '/api/archivos/{id}', 'Eliminar foto privada', { roles: 'admin, 
 route('get', '/api/auditoria', 'Consultar trazabilidad sin imágenes ni cuerpos de solicitudes', { roles: 'admin', paged: true, filters: [filter('entidad'), filter('entidadId')] })
 module.exports = {
   openapi: '3.0.3', info: { title: 'RegistroVisitas API', version: '1.0.0', description: 'Express + MongoDB. Fecha/hora UTC; recepción usa cámara desde el frontend. No incluye OCR, decodificación PDF417 ni reconocimiento facial.' },
-  servers: [{ url: 'http://localhost:3015', description: 'Desarrollo local; en celular usar HTTPS' }],
+  servers: [{ url: 'https://visitas.appfastway.com', description: 'API de visitas; disponibilidad sujeta al despliegue del servidor' }, { url: 'http://localhost:3015', description: 'Desarrollo local; en celular usar HTTPS' }],
   components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } }, schemas }, paths,
 }

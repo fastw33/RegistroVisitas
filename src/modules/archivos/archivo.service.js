@@ -77,7 +77,7 @@ async function download(id, actor, requestId) {
 }
 
 async function remove(id, actor) {
-  const row = await Archivo.findById(id).select(privateFields)
+  const row = await transaction.read(() => Archivo.findById(id).select(privateFields))
   if (!row) throw new ApiError(404, 'Archivo no encontrado')
   if (!row.eliminadoEn) await transaction(async session => {
     await Archivo.updateOne({ _id: id }, { $set: { eliminadoEn: new Date() } }, { session })
@@ -100,8 +100,19 @@ async function purge() {
   ] }).select(privateFields).cursor()
   let deleted = 0
   let failed = 0
-  for await (const row of cursor) {
-    if (!row.eliminadoEn) await Archivo.updateOne({ _id: row._id }, { $set: { eliminadoEn: new Date() } })
+  for await (const candidate of cursor) {
+    // La selección puede ser anterior a otra operación; confirmar elegibilidad
+    // y ocultar la foto antes de realizar el efecto externo sobre S3.
+    const row = await transaction(async session => {
+      const current = await Archivo.findOne({ _id: candidate._id, storageEliminadoEn: null }).select(privateFields).session(session)
+      if (!current) return null
+      const expired = +current.venceEn <= Date.now() || current.eliminadoEn || (current.storageEstado === 'pendiente' && +current.createdAt < Date.now() - 3600000)
+      const revokedConsent = !expired && await Consentimiento.findOne({ _id: current.consentimiento, revocadoEn: { $ne: null } }).session(session)
+      if (!expired && !revokedConsent) return null
+      if (!current.eliminadoEn) await Archivo.updateOne({ _id: current._id }, { $set: { eliminadoEn: new Date() } }, { session })
+      return current
+    })
+    if (!row) continue
     try { await deleteObject(row); deleted++ }
     catch { failed++ }
   }

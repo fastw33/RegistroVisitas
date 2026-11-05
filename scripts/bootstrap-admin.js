@@ -9,8 +9,11 @@ async function main() {
   await connectDB()
   // Solo crea, nunca reinicia contraseñas o modifica usuarios existentes.
   if (await Usuario.exists({ email })) throw new Error('El usuario ya existe; no se modificó')
-  const user = await Usuario.create({ email, nombre: process.env.ADMIN_NAME || 'Administrador', rol: 'admin', passwordHash: await bcrypt.hash(password, 12) })
-  await require('../src/modules/auditoria/auditoria.service').record(user, 'bootstrap', 'usuarios', user._id)
+  const passwordHash = await bcrypt.hash(password, 12)
+  await require('../src/utils/transaction')(async session => {
+    const [user] = await Usuario.create([{ email, nombre: process.env.ADMIN_NAME || 'Administrador', rol: 'admin', passwordHash }], { session })
+    await require('../src/modules/auditoria/auditoria.service').record(user, 'bootstrap', 'usuarios', user._id, session)
+  })
   console.log('Administrador creado. Quite ADMIN_PASSWORD de .env después de usarlo.')
 }
 main().catch(error => { console.error(error.message); process.exitCode = 1 }).finally(disconnectDB)

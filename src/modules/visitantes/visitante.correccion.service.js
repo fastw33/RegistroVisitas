@@ -24,7 +24,7 @@ async function correct(id, data, actor) {
   correccion.numeroDocumento = correccion.numeroDocumento.toUpperCase()
   const motivo = data.motivo.trim()
   const digest = createHash('sha256').update(JSON.stringify({ id: String(id), actor: String(actor._id), anterior, correccion, motivo })).digest('hex')
-  const old = await previous(data.requestKey, digest); if (old) return old
+  const old = await transaction.read(() => previous(data.requestKey, digest)); if (old) return old
   try {
     return await transaction(async session => {
       const row = await required(Visitante, id, session)
@@ -43,7 +43,7 @@ async function correct(id, data, actor) {
     })
   } catch (error) {
     if (error.code === 11000) {
-      const result = await previous(data.requestKey, digest); if (result) return result
+      const result = await transaction.read(() => previous(data.requestKey, digest)); if (result) return result
       throw new ApiError(409, 'Ese documento ya pertenece a otra ficha', 'DOCUMENT_IN_USE')
     }
     throw error

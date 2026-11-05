@@ -23,7 +23,7 @@ if (s3Endpoint) {
 module.exports = Object.freeze({
   nodeEnv: process.env.NODE_ENV || 'development',
   port: integer('PORT', 3015, 1), host: process.env.HOST || '0.0.0.0',
-  mongoUri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27019/registro_visitas?replicaSet=rs0&directConnection=true',
+  mongoUri: process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/registro_visitas?directConnection=true',
   jwtSecret: secret, jwtIssuer: process.env.JWT_ISSUER || 'registro-visitas',
   jwtAudience: process.env.JWT_AUDIENCE || 'registro-visitas-api', jwtExpiresIn: process.env.JWT_EXPIRES_IN || '8h',
   authMode, wmsSecret: process.env.WMS_JWT_SECRET,

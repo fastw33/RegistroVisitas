@@ -26,7 +26,10 @@ app.use(cors({
 }))
 app.use(express.json({ limit: '256kb' }))
 app.get('/health', (req, res) => res.json({ status: 'up', service: 'registro-visitas-api' }))
-app.get('/ready', (req, res) => res.status(mongoose.connection.readyState === 1 ? 200 : 503).json({ ready: mongoose.connection.readyState === 1 }))
+app.get('/ready', async (req, res) => {
+  const ready = mongoose.connection.readyState === 1 && await require('./utils/transaction').checkReady()
+  res.status(ready ? 200 : 503).json({ ready })
+})
 app.get('/openapi.json', (req, res) => res.json(require('../docs/openapi')))
 app.use('/api', (req, res, next) => { res.set('Cache-Control', 'private, no-store'); next() })
 app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, limit: 1000, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: { code: 'RATE_LIMIT', message: 'Demasiadas solicitudes' } } }))

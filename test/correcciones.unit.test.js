@@ -22,6 +22,7 @@ const adapters = {
   '../src/utils/query': { required: async () => person, list: async () => ({ data: logs }) },
   '../src/modules/auditoria/auditoria.service': { record: async (...args) => { if (failAudit) throw new Error('audit failure'); audits.push(args) } },
 }
+adapters['../src/utils/transaction'].read = operation => operation(null)
 for (const [file, exports] of Object.entries(adapters)) require.cache[require.resolve(file)] = { id: require.resolve(file), filename: require.resolve(file), loaded: true, exports }
 const service = require('../src/modules/visitantes/visitante.correccion.service')
 const payload = () => ({ anterior: { ...initial }, correccion: { ...initial, numeroDocumento: '00456', nombres: 'Ana María' }, motivo: 'Verificado con documento físico', requestKey: randomUUID() })

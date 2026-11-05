@@ -40,7 +40,7 @@ function findBinary() {
 }
 
 async function main() {
-  const uri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27019/registro_visitas?replicaSet=rs0&directConnection=true'
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/registro_visitas?directConnection=true'
   if (!localTarget(uri)) {
     if (process.argv.includes('--stop')) throw new Error('db:stop solo administra el MongoDB local propio del puerto 27019')
     console.log('Se usará el MongoDB configurado; no se inicia ninguna instancia local.')

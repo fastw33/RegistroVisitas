@@ -24,6 +24,7 @@ const adapters = {
   '../src/utils/query': { required: async (Model, id) => Model === Usuario ? host : Model === Sede ? { _id: 'office' } : rows.find(row => row._id === id), ownScope: () => ({}) },
   '../src/utils/transaction': async callback => { const oldRows = [...rows], oldAudits = [...audits]; try { return await callback({}) } catch (error) { rows = oldRows; audits = oldAudits; throw error } },
 }
+adapters['../src/utils/transaction'].read = operation => operation(null)
 for (const [file, exports] of Object.entries(adapters)) require.cache[require.resolve(file)] = { id: require.resolve(file), filename: require.resolve(file), loaded: true, exports }
 const service = require('../src/modules/citas/cita.service')
 const payload = () => ({ visitante: 'visitor', sede: 'office', anfitrion: 'host', motivo: 'Reunión', inicio: new Date(Date.now() + 3600000), fin: new Date(Date.now() + 7200000) })

@@ -2,8 +2,9 @@ const jwt = require('jsonwebtoken')
 const env = require('../config/env')
 const Usuario = require('../modules/usuarios/usuario.model')
 const ApiError = require('../utils/ApiError')
+const transaction = require('../utils/transaction')
 
-module.exports = async (req, res, next) => {
+async function authenticate(req) {
   const match = /^Bearer ([^\s]+)$/.exec(req.headers.authorization || '')
   if (!match) throw new ApiError(401, 'Token no proporcionado', 'UNAUTHORIZED')
   let user
@@ -22,5 +23,23 @@ module.exports = async (req, res, next) => {
   }
   if (!user) throw new ApiError(401, 'Token inválido, expirado o usuario sin acceso', 'UNAUTHORIZED')
   req.usuario = user
+}
+module.exports = async (req, res, next) => {
+  const match = /^Bearer ([^\s]+)$/.exec(req.headers.authorization || '')
+  if (!match) throw new ApiError(401, 'Token no proporcionado', 'UNAUTHORIZED')
+  // Rechazar firmas inválidas antes de ocupar el coordinador de la base.
+  const candidates = [
+    ...(env.authMode !== 'wms' ? [{ secret: env.jwtSecret, issuer: env.jwtIssuer, audience: env.jwtAudience }] : []),
+    ...(env.authMode !== 'local' ? [{ secret: env.wmsSecret, issuer: env.wmsIssuer, audience: env.wmsAudience }] : []),
+  ]
+  const valid = candidates.some(({ secret, ...options }) => {
+    try { jwt.verify(match[1], secret, { algorithms: ['HS256'], ...options }); return true }
+    catch (error) {
+      if (['JsonWebTokenError', 'TokenExpiredError', 'NotBeforeError'].includes(error.name)) return false
+      throw error
+    }
+  })
+  if (!valid) throw new ApiError(401, 'Token inválido, expirado o usuario sin acceso', 'UNAUTHORIZED')
+  await transaction.read(() => authenticate(req))
   next()
 }

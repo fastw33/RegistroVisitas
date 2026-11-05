@@ -70,6 +70,7 @@ const adapters = {
   '../src/utils/query': { required: async (Model, id) => Model === Citas ? cita : rows.find(row => String(row._id) === String(id)), ownScope: () => ({}) },
   '../src/modules/auditoria/auditoria.service': { record: async () => {} },
 }
+adapters['../src/utils/transaction'].read = operation => operation(null)
 for (const [file, exports] of Object.entries(adapters)) require.cache[require.resolve(file)] = { id: require.resolve(file), filename: require.resolve(file), loaded: true, exports }
 const service = require('../src/modules/visitas/visita.service')
 

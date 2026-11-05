@@ -1,0 +1,51 @@
+{
+  "name": "registro-visitas-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API de agenda y control de visitantes, arquitectura modular basada en WMS",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "predev": "node scripts/mongo-dev.js",
+    "dev": "nodemon src/server.js",
+    "db:dev": "node scripts/mongo-dev.js",
+    "db:stop": "node scripts/mongo-dev.js --stop",
+    "storage:check": "node scripts/storage-check.js",
+    "storage:prepare": "node scripts/prepare-bucket.js",
+    "storage:smoke": "node scripts/storage-smoke.js",
+    "config:gestor": "node scripts/configure-gestor.js",
+    "config:wms": "node scripts/configure-wms.js",
+    "setup": "node scripts/setup.js",
+    "bootstrap:admin": "node scripts/bootstrap-admin.js",
+    "purge:files": "node scripts/purge-files.js",
+    "test": "node --test --test-concurrency=1",
+    "test:correcciones": "node --test test/correcciones.unit.test.js",
+    "test:horario": "node --test test/horario.unit.test.js",
+    "test:agenda-pase": "node --test test/agenda-pase.unit.test.js",
+    "check": "node scripts/check.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1159.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.2.1",
+    "express-validator": "^7.3.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^9.11.4",
+    "multer": "^2.5.0",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "^13.0.0",
+    "mongodb-memory-server": "^10.3.0",
+    "nodemon": "^3.1.11",
+    "supertest": "^7.1.4"
+  }
+}

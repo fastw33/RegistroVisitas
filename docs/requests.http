@@ -1,0 +1,127 @@
+@baseUrl = http://localhost:3015
+@email = administrador@example.com
+@password = REEMPLAZAR
+@token = REEMPLAZAR_TOKEN_LOGIN
+@visitanteId = REEMPLAZAR_OBJECTID
+@sedeId = REEMPLAZAR_OBJECTID
+@anfitrionId = REEMPLAZAR_OBJECTID
+@citaId = REEMPLAZAR_OBJECTID
+@visitaId = REEMPLAZAR_OBJECTID
+@pase = REEMPLAZAR_TOKEN_PASE
+
+### Salud
+GET {{baseUrl}}/health
+
+### Iniciar sesión
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{"email":"{{email}}","password":"{{password}}"}
+
+### Perfil
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{token}}
+
+### Crear sede (administrador)
+POST {{baseUrl}}/api/sedes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"codigo":"BOG","nombre":"Oficina Bogotá","zonaHoraria":"America/Bogota"}
+
+### Crear visitante
+POST {{baseUrl}}/api/visitantes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"tipoDocumento":"CC","numeroDocumento":"999999999999","nombres":"Persona","apellidos":"De prueba","empresa":"Empresa de prueba"}
+
+### Buscar por documento
+GET {{baseUrl}}/api/visitantes?documento=REEMPLAZAR_NUMERO
+Authorization: Bearer {{token}}
+
+### Consultar textos antes de obtener autorización
+GET {{baseUrl}}/api/consentimientos/politica
+Authorization: Bearer {{token}}
+
+### Registrar autorización expresa ya otorgada por el visitante
+POST {{baseUrl}}/api/consentimientos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"visitante":"{{visitanteId}}","finalidad":"registro_visitas","version":"1.0","aceptado":true,"medio":"casilla","evidencia":"Referencia de la aceptación efectuada por el visitante en recepción"}
+
+### Directorio de anfitriones
+GET {{baseUrl}}/api/usuarios/anfitriones
+Authorization: Bearer {{token}}
+
+### Agendar: sustituir por fechas futuras
+POST {{baseUrl}}/api/citas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"visitante":"{{visitanteId}}","sede":"{{sedeId}}","anfitrion":"{{anfitrionId}}","motivo":"Reunión comercial","inicio":"2026-11-04T09:00:00-05:00","fin":"2026-11-04T10:00:00-05:00"}
+
+### Aprobar (anfitrión correspondiente o administrador)
+POST {{baseUrl}}/api/citas/{{citaId}}/aprobar
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### Emitir/reemplazar pase QR
+POST {{baseUrl}}/api/citas/{{citaId}}/pase
+Authorization: Bearer {{token}}
+
+### Validar pase sin consumirlo
+POST {{baseUrl}}/api/citas/validar-pase
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"token":"{{pase}}"}
+
+### Confirmar identidad e ingreso con cita. Mantener UUID y cuerpo al reintentar.
+POST {{baseUrl}}/api/visitas/entrada
+Authorization: Bearer {{token}}
+Idempotency-Key: 8c7ea920-30c5-4cf0-8be4-a6c39017cf35
+Content-Type: application/json
+
+{"cita":"{{citaId}}","identidadVerificada":true,"equipos":[{"descripcion":"Portátil","serial":"SERIAL-PRUEBA"}]}
+
+### Personas dentro
+GET {{baseUrl}}/api/visitas?estado=dentro
+Authorization: Bearer {{token}}
+
+### Salida
+POST {{baseUrl}}/api/visitas/{{visitaId}}/salida
+Authorization: Bearer {{token}}
+
+### Historial
+GET {{baseUrl}}/api/visitantes/{{visitanteId}}/historial?page=1&limit=25
+Authorization: Bearer {{token}}
+
+### Solicitar ingreso sin cita
+POST {{baseUrl}}/api/visitas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"visitante":"{{visitanteId}}","sede":"{{sedeId}}","anfitrion":"{{anfitrionId}}","motivo":"Visita sin cita"}
+
+### Autorizar solicitud sin cita
+POST {{baseUrl}}/api/visitas/{{visitaId}}/autorizar
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### Confirmar entrada sin cita
+POST {{baseUrl}}/api/visitas/{{visitaId}}/entrada
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"identidadVerificada":true}
+
+### Fotos: primero registrar consentimiento específico foto_rostro o foto_documento.
+# POST /api/archivos con multipart/form-data:
+# visitante={{visitanteId}}, tipo=foto_rostro, visita={{visitaId}} (opcional), archivo=<imagen>
+# GET /api/archivos/:id/contenido requiere Authorization: Bearer {{token}}.

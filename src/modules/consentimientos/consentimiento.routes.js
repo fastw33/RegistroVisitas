@@ -1,0 +1,10 @@
+const router = require('express').Router()
+const controller = require('./consentimiento.controller')
+const validator = require('./consentimiento.validator')
+const roles = require('../../middlewares/roles.middleware')
+router.get('/politica', controller.policy)
+router.use(roles('admin', 'recepcion'))
+router.get('/', validator.list, controller.getAll)
+router.post('/', validator.create, controller.create)
+router.post('/:id/revocar', validator.revoke, controller.revoke)
+module.exports = router

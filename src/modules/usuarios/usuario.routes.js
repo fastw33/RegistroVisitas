@@ -1,0 +1,10 @@
+const router = require('express').Router()
+const controller = require('./usuario.controller')
+const validator = require('./usuario.validator')
+const roles = require('../../middlewares/roles.middleware')
+router.get('/anfitriones', controller.anfitriones)
+router.use(roles('admin'))
+router.get('/', validator.list, controller.getAll)
+router.post('/', validator.create, controller.create)
+router.patch('/:id', validator.update, controller.update)
+module.exports = router

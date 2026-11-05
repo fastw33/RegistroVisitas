@@ -1,0 +1,7 @@
+const service = require('./cita.service')
+exports.create = async (req, res) => res.status(201).json(await service.create(req.datos, req.usuario))
+exports.getAll = async (req, res) => res.json(await service.getAll(req.query, req.usuario))
+exports.getById = async (req, res) => res.json(await service.getById(req.params.id, req.usuario))
+exports.action = accion => async (req, res) => res.json(await service.action(req.params.id, accion, req.datos, req.usuario))
+exports.issuePass = async (req, res) => res.json(await service.issuePass(req.params.id, req.usuario))
+exports.resolvePass = async (req, res) => res.json(await service.resolvePass(req.datos.token))

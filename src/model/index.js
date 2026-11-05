@@ -1,0 +1,10 @@
+// Registro explícito de modelos, equivalente al punto de asociaciones de WMS.
+require('../modules/usuarios/usuario.model')
+require('../modules/sedes/sede.model')
+require('../modules/visitantes/visitante.model')
+require('../modules/visitantes/visitante.correccion.model')
+require('../modules/consentimientos/consentimiento.model')
+require('../modules/citas/cita.model')
+require('../modules/visitas/visita.model')
+require('../modules/archivos/archivo.model')
+require('../modules/auditoria/auditoria.model')

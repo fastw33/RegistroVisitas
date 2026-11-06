@@ -13,7 +13,7 @@ async function resolve(payload, subject, autoProvision) {
   const wmsId = String(subject)
   let user = await Usuario.findOne({ wmsId })
   if (user && !user.activo) return null
-  if (!autoProvision) return user
+  if (!autoProvision) return user?.soloDirectorio ? null : user
   if (payload.debe_cambiar_password) throw new ApiError(403, 'Debe cambiar su contraseña en WMS antes de acceder')
   const rol = roleFromPermissions(payload)
   if (!rol) throw new ApiError(403, 'Solicite un permiso de Control de visitas a su administrador', 'VISITAS_PERMISSION_REQUIRED')
@@ -22,8 +22,8 @@ async function resolve(payload, subject, autoProvision) {
   if (!user) {
     try { user = await Usuario.create({ wmsId, nombre, email: `wms-${wmsId.toLowerCase()}@identity.invalid`, rol, wmsManaged: true }) }
     catch (error) { if (error.code !== 11000) throw error; user = await Usuario.findOne({ wmsId }) }
-  } else if (user.rol !== rol || user.nombre !== nombre) {
-    user = await Usuario.findOneAndUpdate({ _id: user._id, activo: true }, { $set: { rol, nombre } }, { returnDocument: 'after', runValidators: true })
+  } else if (user.rol !== rol || user.nombre !== nombre || user.soloDirectorio) {
+    user = await Usuario.findOneAndUpdate({ _id: user._id, activo: true }, { $set: { rol, nombre, soloDirectorio: false } }, { returnDocument: 'after', runValidators: true })
   }
   return user?.activo ? user : null
 }

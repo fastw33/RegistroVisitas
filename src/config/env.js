@@ -28,6 +28,7 @@ module.exports = Object.freeze({
   jwtAudience: process.env.JWT_AUDIENCE || 'registro-visitas-api', jwtExpiresIn: process.env.JWT_EXPIRES_IN || '8h',
   authMode, wmsSecret: process.env.WMS_JWT_SECRET,
   wmsAutoProvision: process.env.WMS_AUTO_PROVISION === 'true',
+  wmsApiUrl: process.env.WMS_API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.appfastway.com/api' : 'http://127.0.0.1:3000/api'),
   wmsSubjectClaim: process.env.WMS_JWT_SUBJECT_CLAIM || 'id_usuario',
   wmsIssuer: process.env.WMS_JWT_ISSUER || undefined, wmsAudience: process.env.WMS_JWT_AUDIENCE || undefined,
   origins: (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',').map(v => v.trim()).filter(Boolean),

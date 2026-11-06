@@ -8,6 +8,7 @@ const schema = new Schema({
   activo: { type: Boolean, default: true },
   wmsId: { type: String, maxlength: 100 },
   wmsManaged: { type: Boolean, default: false },
+  soloDirectorio: { type: Boolean, default: false },
 }, options)
 schema.index({ wmsId: 1 }, { unique: true, partialFilterExpression: { wmsId: { $type: 'string' } } })
 module.exports = model('Usuario', schema)

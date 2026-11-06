@@ -8,7 +8,7 @@ const ApiError = require('../../utils/ApiError')
 const dummyHash = bcrypt.hashSync('dummy-password-not-a-real-user', 12)
 async function login({ email, password }) {
   if (env.authMode === 'wms') throw new ApiError(403, 'Use el inicio de sesión de WMS')
-  const user = await Usuario.findOne({ email, activo: true }).select('+passwordHash')
+  const user = await Usuario.findOne({ email, activo: true, soloDirectorio: { $ne: true } }).select('+passwordHash')
   const valid = await bcrypt.compare(password, user?.passwordHash || dummyHash)
   if (!valid || !user?.passwordHash) throw new ApiError(401, 'Credenciales inválidas', 'UNAUTHORIZED')
   await record(user, 'login', 'usuarios', user._id)

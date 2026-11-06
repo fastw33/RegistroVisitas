@@ -136,7 +136,7 @@ Envíe `Authorization: Bearer <token>` en todas las rutas `/api`, excepto el log
 | --- | --- |
 | `admin` | Todos los módulos, usuarios, sedes y auditoría |
 | `recepcion` | Visitantes, consentimientos, agenda con aprobación/pase automáticos, ingreso directo sin cita, entrada/salida y fotos; no ejecuta aprobaciones manuales de otros flujos |
-| `anfitrion` | Crea fichas de visitantes; consulta y administra exclusivamente sus propias citas y visitas; no tiene acceso al directorio completo de visitantes, fotos ni auditoría |
+| `anfitrion` | Crea fichas y agenda para cualquier receptor; consulta y administra citas que recibe o que creó, y sus propias solicitudes de visita; no accede al directorio completo de visitantes, fotos ni auditoría |
 
 La cuenta se consulta en MongoDB en cada petición. Desactivar un usuario bloquea inmediatamente sus próximas peticiones. Actualmente los roles son globales para la organización; no hay permisos limitados por sede ni multitenencia.
 
@@ -152,6 +152,12 @@ La cuenta se consulta en MongoDB en cada petición. Desactivar un usuario bloque
 La API valida firma, algoritmo HS256 y expiración. Puede fijar además `WMS_JWT_ISSUER` y `WMS_JWT_AUDIENCE` si WMS los emite. Los permisos proceden de la asociación local, nunca del rol enviado en el token WMS. Cambios/desactivaciones en WMS no se sincronizan automáticamente: también debe actualizarse la asociación local o esperar al vencimiento del token central.
 
 La arquitectura es la misma de WMS, pero esta API no comparte su base de datos. `wmsIdExterno` permite vincular una ficha de visitante; todavía no consulta ni sincroniza el personal externo de WMS.
+
+### Persona que recibe y agenda por asistentes
+
+Con una sesión de WMS, `/api/usuarios/anfitriones` consulta el personal vigente mediante `GET /api/personal` de WMS y lo combina con los receptores locales. No exige que esas personas hayan abierto antes Control de visitas. Configurar `WMS_API_URL` con la base de WMS **incluyendo `/api`**; producción predeterminada: `https://api.appfastway.com/api`, desarrollo: `http://127.0.0.1:3000/api`. La consulta usa el JWT WMS de la petición, con tiempo límite y sin reenviarlo en redirecciones. No necesita credenciales nuevas ni cambios en WMS, MongoDB o S3. Si WMS falla, devuelve receptores locales y un aviso visible para no presentar esa lista como completa.
+
+Solo se guarda la asociación del receptor seleccionado, sin contraseña ni acceso implícito al módulo (`soloDirectorio: true`). Su entrada futura requiere los permisos de visitas firmados que ya existían; la provisión automática conserva la misma asociación. Personal retirado no se incorpora desde el directorio. Los roles `recepcion` también pueden recibir visitas. El asistente con `visitasAgendar` puede elegir otro receptor, consultar las citas que creó y compartir sus pases; el receptor también ve esas citas. Un tercero conserva la restricción de lectura. Los permisos de entrada, salida, correcciones y administración se mantienen.
 
 ## Flujos de uso
 

@@ -6,7 +6,7 @@ const Sede = require('../sedes/sede.model')
 const Usuario = require('../usuarios/usuario.model')
 const transaction = require('../../utils/transaction')
 const { record } = require('../auditoria/auditoria.service')
-const { required, list, ownScope } = require('../../utils/query')
+const { required, list, agendaScope: ownScope } = require('../../utils/query')
 const { event } = require('../../utils/model')
 const env = require('../../config/env')
 const ApiError = require('../../utils/ApiError')
@@ -21,11 +21,10 @@ async function references(data, session, { optionalHost = false } = {}) {
   const visitante = await Visitante.findOneAndUpdate({ _id: data.visitante, activo: true }, { $set: { updatedAt: new Date() } }, { session, returnDocument: 'after' })
   if (!visitante) throw new ApiError(404, 'Visitante activo no encontrado')
   await required(Sede, data.sede, session, { activa: true })
-  if (!optionalHost || data.anfitrion) await required(Usuario, data.anfitrion, session, { activo: true, rol: { $in: ['admin', 'anfitrion'] } })
+  if (!optionalHost || data.anfitrion) await required(Usuario, data.anfitrion, session, { activo: true })
   return visitante
 }
 const create = (data, actor) => transaction(async session => {
-  if (actor.rol === 'anfitrion' && String(actor._id) !== data.anfitrion) throw new ApiError(403, 'Solo puede agendar sus propias citas')
   checkDates(data.inicio, data.fin)
   const visitor = await references(data, session)
   const host = await required(Usuario, data.anfitrion, session, { activo: true })

@@ -16,5 +16,6 @@ async function required(Model, id, session, filter = {}) {
   return item
 }
 function ownScope(user) { return user.rol === 'anfitrion' ? { anfitrion: user._id } : {} }
+function agendaScope(user) { return user.rol === 'anfitrion' ? { $or: [{ anfitrion: user._id }, { creadoPor: user._id }] } : {} }
 function escaped(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }
-module.exports = { list, required, ownScope, escaped }
+module.exports = { list, required, ownScope, agendaScope, escaped }

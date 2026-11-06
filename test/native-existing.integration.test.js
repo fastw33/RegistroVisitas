@@ -43,3 +43,16 @@ test('replica set mantiene el flujo de cita y rollback nativo sin diario standal
   assert.equal(entered.estado, 'dentro'); assert.equal((await visits.exit(String(entered._id), actor)).estado, 'finalizada')
   assert.equal(await db.collection('_visitas_operaciones').countDocuments(), 0)
 })
+
+test('dos asistentes seleccionan al mismo receptor WMS sin duplicar su asociación', { skip: !target }, async () => {
+  const directory = require('../src/integrations/wms-personal'), service = require('../src/modules/usuarios/receptor.service')
+  const original = directory.getPersonal
+  const person = directory.normalize([{ id_usuario: 654321, Nombre: 'Receptor', Apellido: 'WMS' }])[0]
+  directory.getPersonal = async () => [person]
+  try {
+    const [one, two] = await Promise.all([service.resolve(person._id, 'test-only', actor), service.resolve(person._id, 'test-only', host)])
+    assert.equal(one, two)
+    assert.equal(await models.Usuario.countDocuments({ wmsId: person.wmsId }), 1)
+    assert.equal((await models.Usuario.findById(one)).soloDirectorio, true)
+  } finally { directory.getPersonal = original }
+})

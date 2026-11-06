@@ -21,7 +21,7 @@ const adapters = {
   '../src/modules/sedes/sede.model': Sede,
   '../src/config/env': { lateMinutes: 30 },
   '../src/modules/auditoria/auditoria.service': { record: async (...args) => { if (failAudit) throw new Error('Auditoría no disponible'); audits.push(args) } },
-  '../src/utils/query': { required: async (Model, id) => Model === Usuario ? host : Model === Sede ? { _id: 'office' } : rows.find(row => row._id === id), ownScope: () => ({}) },
+  '../src/utils/query': { required: async (Model, id) => Model === Usuario ? host : Model === Sede ? { _id: 'office' } : rows.find(row => row._id === id), agendaScope: () => ({}) },
   '../src/utils/transaction': async callback => { const oldRows = [...rows], oldAudits = [...audits]; try { return await callback({}) } catch (error) { rows = oldRows; audits = oldAudits; throw error } },
 }
 adapters['../src/utils/transaction'].read = operation => operation(null)
@@ -47,10 +47,12 @@ test('cada fecha repetida tiene un pase distinto y renovar uno conserva los otro
   const renewed = await service.issuePass('0', actor)
   assert.notEqual(renewed.token, result.pases[0].token); assert.equal(rows[1].paseHash, secondHash)
 })
-test('un anfitrión no agenda en nombre de otro ni deja citas parciales si falla el pase', async () => {
+test('un asistente agenda a otro receptor y queda registrado como creador; los fallos no dejan citas parciales', async () => {
   rows = []; audits = []
-  await assert.rejects(service.create({ ...payload(), anfitrion: 'other' }, actor), { status: 403 })
-  assert.equal(rows.length, 0)
+  const delegated = await service.create({ ...payload(), anfitrion: 'other' }, actor)
+  assert.equal(delegated.data[0].anfitrion, 'other')
+  assert.equal(delegated.data[0].creadoPor, actor._id)
+  rows = []; audits = []
   const original = QRCode.toDataURL
   QRCode.toDataURL = async () => { throw new Error('No se pudo generar QR') }
   try { await assert.rejects(service.create(payload(), actor), /generar QR/); assert.equal(rows.length, 0); assert.equal(audits.length, 0) }

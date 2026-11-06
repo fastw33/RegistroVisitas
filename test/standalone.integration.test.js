@@ -99,6 +99,42 @@ check('entradas concurrentes, reintento idempotente, cita consumida una vez y ve
   assert.equal(exited.estado, 'finalizada'); assert.equal(exited.vehiculo.placa, 'ABC123')
 })
 
+check('personal WMS completo, agenda delegada y receptores sin acceso implícito al módulo', async () => {
+  const directory = require('../src/integrations/wms-personal'), receivers = require('../src/modules/usuarios/receptor.service')
+  const original = directory.getPersonal
+  const external = directory.normalize([{ id_usuario: 987654321, Nombre: 'Persona', Apellido: 'Sin permisos visitas' }])[0]
+  directory.getPersonal = async () => [external]
+  try {
+    const catalog = await receivers.list('token-de-prueba')
+    assert.ok(catalog.data.some(row => String(row._id) === external._id))
+    for (const row of catalog.data) assert.deepEqual(Object.keys(row).sort(), ['_id', 'nombre'])
+    const id = await receivers.resolve(external._id, 'token-de-prueba', host)
+    const saved = await models.Usuario.findById(id)
+    assert.equal(saved.soloDirectorio, true); assert.equal(saved.passwordHash, undefined)
+    const auth = require('../src/middlewares/auth.middleware'), jwt = require('jsonwebtoken')
+    const local = jwt.sign({}, process.env.JWT_SECRET, { subject: id, issuer: 'registro-visitas', audience: 'registro-visitas-api', expiresIn: '1h' })
+    await assert.rejects(auth({ headers: { authorization: `Bearer ${local}` } }, {}, () => assert.fail('Receptor no es usuario habilitado')), { status: 401 })
+    const wms = require('../src/modules/auth/wms.service')
+    await assert.rejects(wms.resolve({}, external.wmsId, true), { code: 'VISITAS_PERMISSION_REQUIRED' })
+    assert.equal(await wms.resolve({}, external.wmsId, false), null)
+    const visitor = await person()
+    const created = await services.citas.create({ visitante: String(visitor._id), anfitrion: id, motivo: 'Agenda por asistente', inicio: new Date(Date.now() + 3600000), fin: new Date(Date.now() + 7200000) }, host)
+    const cita = created.data[0]
+    assert.equal(String(cita.creadoPor), String(host._id)); assert.equal(String(cita.anfitrion), id)
+    assert.equal(created.pases[0].invitacion.anfitrion, saved.nombre)
+    assert.equal(String((await services.citas.getById(String(cita._id), host))._id), String(cita._id))
+    const outsider = await models.Usuario.create({ nombre: 'Tercero', email: 'tercero@example.test', rol: 'anfitrion' })
+    await assert.rejects(services.citas.getById(String(cita._id), outsider), { status: 404 })
+    const authorized = await wms.resolve({ permisos: { visitasAgendar: true }, username: saved.nombre }, external.wmsId, true)
+    assert.equal(String(authorized._id), id); assert.equal(authorized.soloDirectorio, false)
+    assert.equal((await models.Usuario.countDocuments({ wmsId: external.wmsId })), 1)
+    const receptionist = await models.Usuario.create({ nombre: 'Recibe en recepción', email: 'receiver@example.test', rol: 'recepcion' })
+    assert.ok((await services.citas.create({ visitante: String(visitor._id), anfitrion: String(receptionist._id), motivo: 'Recibe otra área', inicio: new Date(Date.now() + 3600000), fin: new Date(Date.now() + 7200000) }, host)).pases[0].token)
+    directory.getPersonal = async () => { const error = new Error('Directorio temporalmente no disponible'); error.code = 'WMS_DIRECTORY_UNAVAILABLE'; throw error }
+    assert.match((await receivers.list('token-de-prueba')).warning, /no disponible/)
+  } finally { directory.getPersonal = original }
+})
+
 check('fallo de auditoría revierte una serie, sus pases y registros ya insertados', async () => {
   const visitor = await person(), before = await models.Auditoria.countDocuments()
   const original = models.Auditoria.collection.insertOne

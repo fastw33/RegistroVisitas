@@ -11,14 +11,17 @@ async function authenticate(req) {
   if (env.authMode !== 'wms') {
     try {
       const payload = jwt.verify(match[1], env.jwtSecret, { algorithms: ['HS256'], issuer: env.jwtIssuer, audience: env.jwtAudience })
-      if (/^[a-f0-9]{24}$/i.test(payload.sub || '')) user = await Usuario.findOne({ _id: payload.sub, activo: true })
+      if (/^[a-f0-9]{24}$/i.test(payload.sub || '')) user = await Usuario.findOne({ _id: payload.sub, activo: true, soloDirectorio: { $ne: true } })
     } catch (error) { if (!['JsonWebTokenError', 'TokenExpiredError', 'NotBeforeError'].includes(error.name)) throw error }
   }
   if (!user && env.authMode !== 'local') {
     try {
       const payload = jwt.verify(match[1], env.wmsSecret, { algorithms: ['HS256'], issuer: env.wmsIssuer, audience: env.wmsAudience })
       const subject = payload[env.wmsSubjectClaim]
-      if (['string', 'number'].includes(typeof subject)) user = await require('../modules/auth/wms.service').resolve(payload, subject, env.wmsAutoProvision)
+      if (['string', 'number'].includes(typeof subject)) {
+        user = await require('../modules/auth/wms.service').resolve(payload, subject, env.wmsAutoProvision)
+        if (user) req.wmsToken = match[1]
+      }
     } catch (error) { if (!['JsonWebTokenError', 'TokenExpiredError', 'NotBeforeError'].includes(error.name)) throw error }
   }
   if (!user) throw new ApiError(401, 'Token inválido, expirado o usuario sin acceso', 'UNAUTHORIZED')

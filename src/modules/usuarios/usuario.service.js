@@ -26,5 +26,4 @@ async function update(id, data, actor) {
   })
 }
 const getAll = query => list(Usuario, {}, query)
-const anfitriones = () => Usuario.find({ activo: true, rol: { $in: ['admin', 'anfitrion'] } }).select('_id nombre').sort({ nombre: 1 }).limit(500).lean()
-module.exports = { create, update, getAll, anfitriones, publicUser }
+module.exports = { create, update, getAll, publicUser }

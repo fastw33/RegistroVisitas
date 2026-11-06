@@ -16,12 +16,13 @@ function fixture(fetch) {
   })
   return module.exports
 }
-test('el directorio conserva nombres, elimina datos personales extra y omite retirados', () => {
+test('el directorio exige usuario activo confirmado, omite retirados y elimina datos personales extra', () => {
   const service = fixture(), rows = service.normalize([
-    { id_usuario: 12, Nombre: '  Ana ', Apellido: 'Prueba', Id_personal: 'documento-no-exponer', password: 'no-exponer' },
-    { id_usuario: 13, Nombre: 'Retirado', fecha_retiro: '2026-11-01' },
-    { id_usuario: 14, Nombre: 'Vigente', fecha_retiro: '2026-12-01' },
-    { id_usuario: 'invalido', Nombre: 'No usar' },
+    { id_usuario: 12, Nombre: '  Ana ', Apellido: 'Prueba', activo: true, Id_personal: 'documento-no-exponer', password: 'no-exponer' },
+    { id_usuario: 13, Nombre: 'Retirado', activo: true, fecha_retiro: '2026-11-01' },
+    { id_usuario: 14, Nombre: 'Vigente', activo: 1, fecha_retiro: '2026-12-01' },
+    { id_usuario: 'invalido', Nombre: 'No usar', activo: true },
+    ...[false, 0, null, undefined, 'true', '1'].map((activo, index) => ({ id_usuario: 20 + index, Nombre: 'No activo verificado', activo })),
   ], new Date('2026-11-06T15:00:00Z'))
   assert.equal(rows.length, 2); assert.equal(rows[0].nombre, 'Ana Prueba')
   assert.match(rows[0]._id, /^[a-f0-9]{24}$/)
@@ -31,10 +32,10 @@ test('el directorio conserva nombres, elimina datos personales extra y omite ret
 })
 test('consulta solo el WMS configurado, propaga la sesión y prohíbe redirecciones', async () => {
   const service = fixture(async (url, options) => {
-    assert.equal(url, 'https://wms.example.test/api/personal')
+    assert.equal(url, 'https://wms.example.test/api/personal/receptores-visitas')
     assert.equal(options.headers.Authorization, 'Bearer fixture-token')
     assert.equal(options.redirect, 'error'); assert.ok(options.signal)
-    return { ok: true, json: async () => [{ id_usuario: 1, Nombre: 'Ana' }] }
+    return { ok: true, json: async () => [{ id_usuario: 1, Nombre: 'Ana', activo: true }] }
   })
   assert.equal((await service.getPersonal('fixture-token'))[0].nombre, 'Ana')
 })

@@ -43,8 +43,9 @@ before(async () => {
   const bcrypt = require('bcryptjs')
   users = {}
   for (const [name, rol] of Object.entries({ admin: 'admin', recepcion: 'recepcion', anfitrion: 'anfitrion', otro: 'anfitrion' })) {
-    users[name] = await Usuario.create({ nombre: name, email: `${name}@example.test`, rol, wmsId: name === 'anfitrion' ? 'WMS-123' : undefined, passwordHash: await bcrypt.hash('Password-seguro-2026!', 4) })
+    users[name] = await Usuario.create({ nombre: name, email: `${name}@example.test`, rol, passwordHash: await bcrypt.hash('Password-seguro-2026!', 4) })
   }
+  await Usuario.create({ nombre: 'Asociación WMS', email: 'wms-associated@example.test', rol: 'anfitrion', wmsId: 'WMS-123' })
   const env = require('../src/config/env')
   tokens = Object.fromEntries(Object.entries(users).map(([name, user]) => [name, jwt.sign({}, env.jwtSecret, { subject: String(user._id), issuer: env.jwtIssuer, audience: env.jwtAudience, expiresIn: '1h' })]))
 }, { timeout: 120000 })

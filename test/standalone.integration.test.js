@@ -102,7 +102,7 @@ check('entradas concurrentes, reintento idempotente, cita consumida una vez y ve
 check('personal WMS completo, agenda delegada y receptores sin acceso implícito al módulo', async () => {
   const directory = require('../src/integrations/wms-personal'), receivers = require('../src/modules/usuarios/receptor.service')
   const original = directory.getPersonal
-  const external = directory.normalize([{ id_usuario: 987654321, Nombre: 'Persona', Apellido: 'Sin permisos visitas' }])[0]
+  const external = directory.normalize([{ id_usuario: 987654321, Nombre: 'Persona', Apellido: 'Sin permisos visitas', activo: true }])[0]
   directory.getPersonal = async () => [external]
   try {
     const catalog = await receivers.list('token-de-prueba')
@@ -128,10 +128,16 @@ check('personal WMS completo, agenda delegada y receptores sin acceso implícito
     const authorized = await wms.resolve({ permisos: { visitasAgendar: true }, username: saved.nombre }, external.wmsId, true)
     assert.equal(String(authorized._id), id); assert.equal(authorized.soloDirectorio, false)
     assert.equal((await models.Usuario.countDocuments({ wmsId: external.wmsId })), 1)
+    // Aunque conserve asociación local activa, no debe reaparecer si WMS lo desactiva.
+    directory.getPersonal = async () => []
+    assert.equal((await receivers.list('token-de-prueba')).data.some(row => String(row._id) === id), false)
+    await assert.rejects(receivers.resolve(id, 'token-de-prueba', host), { status: 404 })
+    await assert.rejects(receivers.resolve(id, undefined, host), { code: 'WMS_DIRECTORY_UNAVAILABLE' })
     const receptionist = await models.Usuario.create({ nombre: 'Recibe en recepción', email: 'receiver@example.test', rol: 'recepcion' })
     assert.ok((await services.citas.create({ visitante: String(visitor._id), anfitrion: String(receptionist._id), motivo: 'Recibe otra área', inicio: new Date(Date.now() + 3600000), fin: new Date(Date.now() + 7200000) }, host)).pases[0].token)
     directory.getPersonal = async () => { const error = new Error('Directorio temporalmente no disponible'); error.code = 'WMS_DIRECTORY_UNAVAILABLE'; throw error }
     assert.match((await receivers.list('token-de-prueba')).warning, /no disponible/)
+    assert.equal((await receivers.list('token-de-prueba')).data.some(row => String(row._id) === id), false)
   } finally { directory.getPersonal = original }
 })
 

@@ -4,7 +4,8 @@ const transaction = require('../../utils/transaction')
 const { record } = require('../auditoria/auditoria.service')
 const ApiError = require('../../utils/ApiError')
 
-const localPeople = () => Usuario.find({ activo: true, soloDirectorio: { $ne: true } }).select('_id nombre wmsId').sort({ nombre: 1 }).lean()
+// Los asociados a WMS solo se incluyen después de verificar su estado remoto.
+const localPeople = () => Usuario.find({ activo: true, soloDirectorio: { $ne: true }, $or: [{ wmsId: { $exists: false } }, { wmsId: null }, { wmsId: '' }] }).select('_id nombre wmsId').sort({ nombre: 1 }).lean()
 async function list(token) {
   const local = await transaction.read(localPeople)
   if (!token) return { data: local.map(({ _id, nombre }) => ({ _id, nombre })) }
@@ -29,9 +30,9 @@ async function list(token) {
 async function resolve(id, token, actor) {
   if (!id) return id
   const current = await transaction.read(() => Usuario.findById(id))
-  if (current && !current.soloDirectorio) return id
+  if (current && !current.soloDirectorio && !current.wmsId) return id
   if (!token) {
-    if (current) return id
+    if (current?.wmsId) throw new ApiError(503, 'Se requiere una sesión de WMS para validar que el receptor siga activo', 'WMS_DIRECTORY_UNAVAILABLE')
     throw new ApiError(404, 'Persona que recibe no encontrada', 'NOT_FOUND')
   }
   const people = await directory.getPersonal(token)
